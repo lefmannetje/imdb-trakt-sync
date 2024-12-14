@@ -4,7 +4,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 */12 * * *"
+    - cron: "0 */48 * * *"
   workflow_dispatch:
 env:
   ITS_IMDB_AUTH: ${{ secrets.IMDB_AUTH }}
@@ -24,6 +24,7 @@ env:
   ITS_TRAKT_CLIENTSECRET: ${{ secrets.TRAKT_CLIENTSECRET }}
   ITS_TRAKT_EMAIL: ${{ secrets.TRAKT_EMAIL }}
   ITS_TRAKT_PASSWORD: ${{ secrets.TRAKT_PASSWORD }}
+  DEBUG: true
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -41,4 +42,9 @@ jobs:
       - name: Build
         run: make build
       - name: Sync
-        run: make sync
+          run: make sync > output.log
+      - name: Upload Logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: sync-logs
+          path: output.log
