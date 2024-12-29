@@ -6,7 +6,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"log/slog"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -47,17 +46,7 @@ type imdbConfig struct {
 }
 
 func NewIMDbClient(ctx context.Context, conf *appconfig.IMDb, logger *slog.Logger) (IMDbClientInterface, error) {
-	var browserPath string
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		browserPath = fmt.Sprintf("%s/.browser/chrome-linux/chrome", os.Getenv("HOME"))
-	} else {
-		var found bool
-		browserPath, found = launcher.LookPath()
-		if !found {
-			return nil, fmt.Errorf("failure looking up browser path")
-		}
-	}
-	l := launcher.New().Headless(*conf.Headless).Bin(browserPath).
+	l := launcher.New().Headless(*conf.Headless).Bin(getBrowserPathOrFallback(conf)).
 		Set("allow-running-insecure-content").
 		Set("autoplay-policy", "user-gesture-required").
 		Set("disable-component-update").
@@ -721,4 +710,14 @@ func setBrowserCookies(browser *rod.Browser, config *appconfig.IMDb) error {
 		return fmt.Errorf("failure setting browser cookies: %w", err)
 	}
 	return nil
+}
+
+func getBrowserPathOrFallback(conf *appconfig.IMDb) string {
+	if browserPath := conf.BrowserPath; *browserPath != "" {
+		return *browserPath
+	}
+	if browserPath, found := launcher.LookPath(); found {
+		return browserPath
+	}
+	return ""
 }
